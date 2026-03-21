@@ -1,13 +1,14 @@
 import argparse
 import os
+import time
 from dataclasses import asdict
 import tiktoken
 import torch
 import wandb
 from gpt2.config import GPTConfig, TrainingConfig
 from gpt2.model import GPTModel
-from gpt2.data import create_fineweb_loaders, create_verdict_loaders, create_fineweb_loaders_from_file
-from gpt2.utils import calc_loss_batch, save_checkpoint, bits_per_byte
+from gpt2.data import create_verdict_loaders, create_fineweb_loaders_from_file
+from gpt2.utils import calc_loss_batch, save_checkpoint, bits_per_byte, evaluate_model
 from gpt2.generate import token_ids_to_text, text_to_token_ids, generate_text_simple
 
 SMOKE_CONFIG = GPTConfig(
@@ -20,6 +21,7 @@ SMOKE_CONFIG = GPTConfig(
 
 def train(model, train_loader, val_loader, optimizer, device, train_cfg, model_cfg, tokenizer):
     tokens_seen, global_step = 0, -1
+    t0 = time.time()
 
     for epoch in range(train_cfg.num_epochs):
         model.train()
@@ -27,22 +29,25 @@ def train(model, train_loader, val_loader, optimizer, device, train_cfg, model_c
             optimizer.zero_grad()
             loss = calc_loss_batch(input_batch, target_batch, model, device)
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), train_cfg.grad_clip)
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), train_cfg.grad_clip)
             optimizer.step()
             tokens_seen += input_batch.numel()
             global_step += 1
 
             if global_step % train_cfg.eval_freq == 0:
-                model.eval()
-                with torch.no_grad():
-                    train_loss = calc_loss_batch(input_batch, target_batch, model, device).item()
-                model.train()
+                train_loss, val_loss = evaluate_model(
+                    model, train_loader, val_loader, device, train_cfg.eval_iter
+                )
+                tokens_per_sec = tokens_seen / (time.time() - t0)
                 wandb.log({
                     "train/loss": train_loss,
+                    "val/loss": val_loss,
                     "train/perplexity": torch.exp(torch.tensor(train_loss)).item(),
                     "train/bpb": bits_per_byte(train_loss),
                     "train/tokens_seen": tokens_seen,
+                    "train/tokens_per_sec": tokens_per_sec,
                     "train/step": global_step,
+                    "train/grad_norm": grad_norm.item()
                 })
                 print(
                     f"Epoch {epoch+1} (Step {global_step:06d}): "
@@ -115,18 +120,11 @@ def main():
             batch_size=train_cfg.batch_size,
             context_length=model_cfg.context_length
         )
-    elif train_cfg.dataset == "fineweb_file":
+    else:
         train_loader, val_loader = create_fineweb_loaders_from_file(
             path=train_cfg.data_path,
             batch_size=train_cfg.batch_size,
             context_length=model_cfg.context_length,
-        )
-    else:
-        train_loader, val_loader = create_fineweb_loaders(
-            tokenizer=tokenizer,
-            num_tokens=train_cfg.num_tokens,
-            batch_size=train_cfg.batch_size,
-            context_length=model_cfg.context_length
         )
 
     print(f"Train batches: {len(train_loader)}, Val batches: {len(val_loader)}")

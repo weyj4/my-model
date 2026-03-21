@@ -93,6 +93,8 @@ def create_verdict_loaders(
     context_length: int,
     val_ratio: float = 0.1,
 ) -> tuple[DataLoader, DataLoader]:
+    """This basically just tokenizes the raw text and creates
+    a train/val split"""
     tokenizer = tiktoken.get_encoding("gpt2")
     
     with open("data/the-verdict.txt", "r", encoding="utf-8") as f:
@@ -109,43 +111,6 @@ def create_verdict_loaders(
     )
     val_loader = create_token_dataloader(
         val_tokens, batch_size, context_length, shuffle=False, drop_last=False
-    )
-    return train_loader, val_loader
-
-def create_fineweb_loaders(
-    tokenizer, 
-    num_tokens: int,
-    batch_size: int,
-    context_length: int,
-    val_ratio: float = 0.05,
-):
-    
-    dataset = load_dataset(
-        "HuggingFaceFW/fineweb",
-        name="sample-10BT",
-        split="train",
-        streaming=True
-    )
-    
-    tokens = []
-    for example in dataset:
-        tokens.extend(tokenizer.encode(example["text"], allowed_special={"<|endoftext|>"}))
-        tokens.append(tokenizer.eot_token)
-        if len(tokens) >= num_tokens:
-            break
-    tokens = tokens[:num_tokens]
-    
-    split = int(len(tokens) * (1 - val_ratio))
-    train_tokens = tokens[:split]
-    val_tokens = tokens[split:]
-    
-    # convert to text for GPTDatasetV1
-    # actually cleaner to make a TokenDataset that takes raw tokens:
-    train_loader = create_token_dataloader(
-        train_tokens, batch_size, context_length, shuffle=True
-    )
-    val_loader = create_token_dataloader(
-        val_tokens, batch_size, context_length, shuffle=False
     )
     return train_loader, val_loader
 
