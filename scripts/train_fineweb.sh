@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
+[ -f .env ] && source .env
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$REPO_ROOT"
+source /workspace/.venv/bin/activate
 
 python -m gpt2.train \
     --run_name fineweb-baseline \
