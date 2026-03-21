@@ -2,6 +2,8 @@
 set -e
 [ -f .env ] && source .env
 
+export TORCH_HOME=/workspace/torch_cache
+
 DATA_PATH="/workspace/data/fineweb_2b5.npy"
 NUM_TOKENS=2500000000
 

@@ -2,18 +2,25 @@ import torch
 import torch.nn as nn
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, d_in, d_out, num_heads):
+    def __init__(self, d_in, d_out, context_length, num_heads, use_flash=True):
         super().__init__()
         
         self.d_out = d_out
         self.num_heads = num_heads
         self.head_dim = d_out // num_heads
+        self.use_flash = use_flash
 
         self.W_query = nn.Linear(d_in, d_out)
         self.W_key = nn.Linear(d_in, d_out)
         self.W_value = nn.Linear(d_in,d_out)
 
         self.out_proj = nn.Linear(d_out, d_out)
+
+        if not use_flash:
+            self.register_buffer(
+                'mask',
+                torch.triu(torch.ones(context_length, context_length), diagonal=1)
+            )
 
 
     def forward(self, x):
@@ -31,9 +38,16 @@ class MultiHeadAttention(nn.Module):
         keys = keys.transpose(1, 2)
         values = values.transpose(1, 2)
 
-        context_vec = torch.nn.functional.scaled_dot_product_attention(
-            queries, keys, values, is_causal=True
-        ).transpose(1, 2)
+        if self.use_flash:
+            context_vec = torch.nn.functional.scaled_dot_product_attention(
+                queries, keys, values, is_causal=True
+            ).transpose(1, 2)
+        else:
+            attn_scores = queries @ keys.transpose(2, 3)
+            mask_bool = self.mask.bool()[:num_tokens, :num_tokens]
+            attn_scores.masked_fill_(mask_bool, -torch.inf)
+            attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+            context_vec = (attn_weights @ values).transpose(1, 2)
 
         context_vec = context_vec.contiguous().view(
             b, num_tokens, self.d_out
@@ -84,7 +98,9 @@ class TransformerBlock(nn.Module):
         self.att = MultiHeadAttention(
             d_in=cfg.emb_dim,
             d_out=cfg.emb_dim,
-            num_heads=cfg.n_heads
+            context_length=cfg.context_length,
+            num_heads=cfg.n_heads,
+            use_flash=cfg.use_flash
         )
         self.ff = FeedForward(cfg)
         self.norm1 = LayerNorm(cfg.emb_dim)

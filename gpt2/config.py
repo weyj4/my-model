@@ -9,6 +9,7 @@ class GPTConfig:
     n_layers: int = 12
     drop_rate: float = 0.0
     qkv_bias: bool = False
+    use_flash: bool = True
 
 @dataclass
 class TrainingConfig:
@@ -24,7 +25,7 @@ class TrainingConfig:
     num_tokens: int = 10_000_000
     wandb_project: str = "gpt2-pretraining"
     wandb_run_name: str = "baseline"
-    checkpoint_dir: str = "checkpoints"
+    checkpoint_dir: str = "/workspace/checkpoints"
     checkpoint_freq: int = 500
     data_path: str = "/workspace/data/fineweb_2b5.npy"
 

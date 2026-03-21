@@ -106,7 +106,8 @@ def main():
     wandb.init(
         project=train_cfg.wandb_project,
         name=train_cfg.wandb_run_name,
-        config={**asdict(model_cfg), **asdict(train_cfg)}
+        config={**asdict(model_cfg), **asdict(train_cfg)},
+        settings=wandb.Settings(init_timeout=120)
     )
 
     model = GPTModel(model_cfg)
