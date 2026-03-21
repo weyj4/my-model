@@ -1,11 +1,10 @@
 FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 
-WORKDIR /workspace
+WORKDIR /app
 
 ENV HF_HOME=/workspace/hf_cache
 ENV WANDB_DIR=/workspace/wandb
 
-# Install deps into system Python (same one PyTorch uses)
 COPY pyproject.toml ./
 RUN pip install tiktoken wandb datasets huggingface_hub
 
