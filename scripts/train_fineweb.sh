@@ -2,8 +2,6 @@
 set -e
 [ -f .env ] && source .env
 
-source /workspace/.venv/bin/activate
-
 python -m gpt2.train \
     --run_name fineweb-baseline \
     --batch_size 32 \
