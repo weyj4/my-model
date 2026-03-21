@@ -37,15 +37,38 @@ def create_dataloader_v1(txt, batch_size=4, max_length=256, stride=128, shuffle=
     return dataloader
 
 class TokenDataset(Dataset):
-    def __init__(self, tokens: list[int], context_length: int, stride: int):
-        self.input_ids = []
-        self.target_ids = []
-        for i in range(0, len(tokens) - context_length, stride):
-            self.input_ids.append(torch.tensor(tokens[i:i+context_length]))
-            self.target_ids.append(torch.tensor(tokens[i+1:i+context_length+1]))
+    def __init__(self, tokens, context_length: int, stride: int):
+        self.context_length = context_length
+        self.stride = stride
+
+        if isinstance(tokens, np.ndarray):
+            self.tokens = tokens
+            self.use_numpy = True
+            self.length = (len(tokens) - context_length) // stride
+        else:
+            self.use_numpy = False
+            self.input_ids = []
+            self.target_ids = []
+            for i in range(0, len(tokens) - context_length, stride):
+                self.input_ids.append(torch.tensor(tokens[i:i+context_length]))
+                self.target_ids.append(torch.tensor(tokens[i+1:i+context_length+1]))
     
-    def __len__(self): return len(self.input_ids)
-    def __getitem__(self, idx): return self.input_ids[idx], self.target_ids[idx]
+    def __len__(self):
+        if self.use_numpy:
+            return self.length
+        return len(self.input_ids)
+
+    def __getitem__(self, idx):
+        if self.use_numpy:
+            start = idx * self.stride
+            x = torch.from_numpy(
+                self.tokens[start:start + self.context_length].astype(np.int64)
+            )
+            y = torch.from_numpy(
+                self.tokens[start + 1:start + self.context_length + 1].astype(np.int64)
+            )
+            return x, y
+        return self.input_ids[idx], self.target_idx[idx]
 
 def create_token_dataloader(
     tokens: list[int],
