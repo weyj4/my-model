@@ -18,7 +18,7 @@ def load_checkpoint(path, model, optimizer):
 
 def calc_loss_batch(input_batch, target_batch, model, device):
     input_batch = input_batch.to(device)
-    target_batch = target_batch.to(device)
+    target_batch = target_batch.to(device).long()
     if device.type == "cuda":
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             logits = model(input_batch)
