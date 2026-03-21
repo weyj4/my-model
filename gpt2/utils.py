@@ -16,7 +16,10 @@ def save_checkpoint(model, optimizer, config, step, path):
 
 def load_checkpoint(path, model, optimizer):
     ckpt = torch.load(path, weights_only=True)
-    model.load_state_dict(ckpt["model_state_dict"])
+    model.load_state_dict({
+        k: v.to(torch.float32) if v.is_floating_point() else v
+        for k, v in ckpt["model_state_dict"].items()
+    })
     optimizer.load_state_dict(ckpt["optimizer_state_dict"])
     return ckpt["step"]
 
