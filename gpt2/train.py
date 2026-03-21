@@ -75,6 +75,7 @@ def main():
     parser.add_argument("--num_tokens", type=int, default=10_000_000)
     parser.add_argument("--lr", type=float, default=4e-4)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--dataset", type=str, default="fineweb_file")
     args = parser.parse_args()
 
     if args.smoke:
@@ -84,7 +85,7 @@ def main():
             batch_size=2,
             eval_freq=5,
             num_epochs=2,
-            dataset="verdict"
+            dataset=args.dataset
         )
     else:
         model_cfg = GPTConfig()

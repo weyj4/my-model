@@ -20,7 +20,7 @@ class TrainingConfig:
     eval_iter: int = 10
     grad_clip: float = 1.0
     warmup_steps: int = 100
-    dataset: str = "fineweb"
+    dataset: str = "fineweb_file"
     num_tokens: int = 10_000_000
     wandb_project: str = "gpt2-pretraining"
     wandb_run_name: str = "baseline"
