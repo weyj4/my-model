@@ -37,7 +37,7 @@ def create_dataloader_v1(txt, batch_size=4, max_length=256, stride=128, shuffle=
     return dataloader
 
 class TokenDataset(Dataset):
-    def __init__(self, tokens, context_length: int, stride: int):
+    def __init__(self, tokens: list[int] | np.ndarray, context_length: int, stride: int):
         self.context_length = context_length
         self.stride = stride
 
@@ -68,7 +68,7 @@ class TokenDataset(Dataset):
                 self.tokens[start + 1:start + self.context_length + 1].astype(np.int64)
             )
             return x, y
-        return self.input_ids[idx], self.target_idx[idx]
+        return self.input_ids[idx], self.target_ids[idx]
 
 def create_token_dataloader(
     tokens: list[int],
