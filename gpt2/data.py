@@ -1,5 +1,6 @@
 from datasets import load_dataset
 import tiktoken
+import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 
@@ -122,5 +123,22 @@ def create_fineweb_loaders(
     )
     val_loader = create_token_dataloader(
         val_tokens, batch_size, context_length, shuffle=False
+    )
+    return train_loader, val_loader
+
+def create_fineweb_loaders_from_file(
+    path: str,
+    batch_size: int,
+    context_length: int,
+    val_ratio: float = 0.05,
+) -> tuple[DataLoader, DataLoader]:
+    tokens = np.load(path, mmap_mode='r')  # memory-mapped — doesn't load into RAM
+    split = int(len(tokens) * (1 - val_ratio))
+    
+    train_loader = create_token_dataloader(
+        tokens[:split], batch_size, context_length, shuffle=True
+    )
+    val_loader = create_token_dataloader(
+        tokens[split:], batch_size, context_length, shuffle=False, drop_last=False
     )
     return train_loader, val_loader

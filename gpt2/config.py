@@ -26,5 +26,6 @@ class TrainingConfig:
     wandb_run_name: str = "baseline"
     checkpoint_dir: str = "checkpoints"
     checkpoint_freq: int = 500
+    data_path: str = "/workspace/data/fineweb_2b5.npy"
 
 

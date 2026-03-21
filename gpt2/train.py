@@ -6,7 +6,7 @@ import torch
 import wandb
 from gpt2.config import GPTConfig, TrainingConfig
 from gpt2.model import GPTModel
-from gpt2.data import create_fineweb_loaders, create_verdict_loaders
+from gpt2.data import create_fineweb_loaders, create_verdict_loaders, create_fineweb_loaders_from_file
 from gpt2.utils import calc_loss_batch, save_checkpoint, bits_per_byte
 from gpt2.generate import token_ids_to_text, text_to_token_ids, generate_text_simple
 
@@ -113,6 +113,12 @@ def main():
         train_loader, val_loader = create_verdict_loaders(
             batch_size=train_cfg.batch_size,
             context_length=model_cfg.context_length
+        )
+    elif train_cfg.dataset == "fineweb_file":
+        train_loader, val_loader = create_fineweb_loaders_from_file(
+            path=train_cfg.data_path,
+            batch_size=train_cfg.batch_size,
+            context_length=model_cfg.context_length,
         )
     else:
         train_loader, val_loader = create_fineweb_loaders(
