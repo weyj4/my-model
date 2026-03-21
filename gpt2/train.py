@@ -1,4 +1,5 @@
 import argparse
+import glob
 import os
 import time
 from dataclasses import asdict
@@ -62,6 +63,10 @@ def train(model, train_loader, val_loader, optimizer, device, train_cfg, model_c
                     step=global_step,
                     path=f"{train_cfg.checkpoint_dir}/ckpt_{global_step:06d}.pt"
                 )
+
+                ckpts = sorted(glob.glob(f"{train_cfg.checkpoint_dir}/ckpt_*.pt")))
+                for old in ckpts[:-2]:
+                    os.remove(old)
 
         # end of epoch generation sample
         encoded = text_to_token_ids("Every effort moves you", tokenizer).to(device)

@@ -3,9 +3,13 @@ import torch
 import torch.nn.functional as F
 
 def save_checkpoint(model, optimizer, config, step, path):
+    model_state = {
+        k: v.to(torch.bfloat16) if v.is_floating_point() else v
+        for k, v in model.state_dict().items()
+    }
     torch.save({
         "step": step,
-        "model_state_dict": model.state_dict(),
+        "model_state_dict": model_state,
         "optimizer_state_dict": optimizer.state_dict(),
         "config": asdict(config),
     }, path)

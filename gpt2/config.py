@@ -26,7 +26,7 @@ class TrainingConfig:
     wandb_project: str = "gpt2-pretraining"
     wandb_run_name: str = "baseline"
     checkpoint_dir: str = "/workspace/checkpoints"
-    checkpoint_freq: int = 500
+    checkpoint_freq: int = 2000
     data_path: str = "/workspace/data/fineweb_2b5.npy"
 
 
