@@ -17,7 +17,7 @@ fi
 
 python -m gpt2.train \
     --run_name fineweb-baseline \
-    --batch_size 32 \
+    --batch_size 4 \
     --num_tokens $NUM_TOKENS \
     --dataset fineweb_file \
     --lr 4e-4
