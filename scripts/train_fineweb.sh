@@ -18,8 +18,8 @@ else
 fi
 
 python -m gpt2.train \
-    --run_name fineweb-baseline \
-    --batch_size 4 \
+    --run_name flash-bs64 \
+    --batch_size 64 \
     --num_tokens $NUM_TOKENS \
     --dataset fineweb_file \
     --lr 4e-4
