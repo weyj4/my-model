@@ -28,14 +28,11 @@ def pretokenize(hf_dataset: str, config: str, num_tokens: int, output_path: str)
     )
 
     # pre-allocate — no Python list accumulation
-    tokens = np.zeros(num_tokens, dtype=np.int32)
+    tokens = np.zeros(num_tokens, dtype=np.uint16)
     idx = 0
 
     for example in dataset:
-        chunk = tokenizer.encode(
-            example["text"],
-            allowed_special={"<|endoftext|>"}
-        )
+        chunk = tokenizer.encode_ordinary(example["text"])
         chunk.append(tokenizer.eot_token)
         end = min(idx + len(chunk), num_tokens)
         tokens[idx:end] = chunk[:end - idx]
