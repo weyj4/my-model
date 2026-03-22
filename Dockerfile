@@ -12,4 +12,5 @@ RUN pip install tiktoken wandb datasets huggingface_hub
 
 COPY . .
 
-CMD ["bash", "scripts/train_fineweb.sh"]
+# CMD ["bash", "scripts/train_fineweb.sh"]
+CMD ["bash"]
