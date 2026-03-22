@@ -161,6 +161,7 @@ def main():
         optim_groups,
         lr=train_cfg.lr,
         betas=(0.9, 0.95),
+        fused=torch.cuda.is_available()
     )
 
     train(model, train_loader, val_loader, optimizer, device, train_cfg, model_cfg, tokenizer)
