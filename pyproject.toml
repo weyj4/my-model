@@ -8,5 +8,6 @@ dependencies = [
     "datasets>=4.8.3",
     "tiktoken>=0.12.0",
     "torch>=2.10.0",
+    "transformers>=5.3.0",
     "wandb>=0.25.1",
 ]
