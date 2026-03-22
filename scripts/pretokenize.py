@@ -9,12 +9,20 @@ import tiktoken
 from datasets import load_dataset
 import os
 
-def pretokenize(dataset_name: str, num_tokens: int, output_path: str):
+DATASETS = {
+    "fineweb": "HuggingFaceFW/fineweb",
+    "fineweb-edu": "HuggingFaceFW/fineweb-edu",
+}
+
+def pretokenize(hf_dataset: str, config: str, num_tokens: int, output_path: str):
+    hf_name = DATASETS[hf_dataset]
     tokenizer = tiktoken.get_encoding("gpt2")
+
     dataset = load_dataset(
         # "HuggingFaceFW/fineweb",
-        dataset_name,
-        name="sample-10BT",
+        # "HuggingFaceFW/fineweb-edu"
+        hf_name,
+        name=config,
         split="train",
         streaming=True
     )
@@ -44,7 +52,9 @@ def pretokenize(dataset_name: str, num_tokens: int, output_path: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", type=str, default="fineweb")
+    parser.add_argument("--config", type=str, default="sample-10BT")
     parser.add_argument("--num_tokens", type=int, default=2_500_000_000)
     parser.add_argument("--output", type=str, default="/workspace/data/fineweb_2b5.npy")
     args = parser.parse_args()
-    pretokenize(args.num_tokens, args.output)
+    pretokenize(args.dataset, args.config, args.num_tokens, args.output)

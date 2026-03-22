@@ -27,7 +27,7 @@ def get_lr(step, train_cfg):
     if step > train_cfg.lr_decay_steps:
         return train_cfg.min_lr
     ratio = (step - train_cfg.warmup_steps) / (train_cfg.lr_decay_steps - train_cfg.warmup_steps)
-    coeff = 0.5 * (1.0 * math.cos(math.pi * ratio))
+    coeff = 0.5 * (1.0 + math.cos(math.pi * ratio))
     return train_cfg.min_lr + coeff * (train_cfg.lr - train_cfg.min_lr)
 
 def train(model, train_loader, val_loader, optimizer, device, train_cfg, model_cfg, tokenizer):
@@ -150,11 +150,17 @@ def main():
     print(f"Device: {device}")
     print(f"Model params: {sum(p.numel() for p in model.parameters()):,}")
 
+    decay_params = [p for n, p in model.named_parameters() if p.dim() >= 2]
+    nodecay_params = [p for n, p in model.named_parameters() if p.dim() < 2]
+    optim_groups = [
+        {"params": decay_params, "weight_decay": train_cfg.weight_decay},
+        {"params": nodecay_params, "weight_decay": 0.0},
+    ]
+
     optimizer = torch.optim.AdamW(
-        model.parameters(),
+        optim_groups,
         lr=train_cfg.lr,
         betas=(0.9, 0.95),
-        weight_decay=train_cfg.weight_decay
     )
 
     train(model, train_loader, val_loader, optimizer, device, train_cfg, model_cfg, tokenizer)
