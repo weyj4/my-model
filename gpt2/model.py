@@ -10,11 +10,11 @@ class MultiHeadAttention(nn.Module):
         self.head_dim = d_out // num_heads
         self.use_flash = use_flash
 
-        self.W_query = nn.Linear(d_in, d_out)
-        self.W_key = nn.Linear(d_in, d_out)
-        self.W_value = nn.Linear(d_in,d_out)
+        self.W_query = nn.Linear(d_in, d_out, bias=False)
+        self.W_key = nn.Linear(d_in, d_out, bias=False)
+        self.W_value = nn.Linear(d_in,d_out, bias=False)
 
-        self.out_proj = nn.Linear(d_out, d_out)
+        self.out_proj = nn.Linear(d_out, d_out, bias=False)
 
         if not use_flash:
             self.register_buffer(
@@ -69,6 +69,16 @@ class LayerNorm(nn.Module):
         norm_x = (x - mean) / torch.sqrt(var + self.eps)
         return self.scale * norm_x + self.shift
 
+class RMSNorm(nn.Module):
+    def __init__(self, emb_dim, eps=1e-5):
+        super().__init__()
+        self.eps = eps
+        self.scale = nn.Parameter(torch.ones(emb_dim))
+
+    def forward(self, x):
+        rms = torch.sqrt(x.pow(2).mean(dim=-1, keepdim=True) + self.eps)
+        return self.scale * (x / rms)
+
 class GELU(nn.Module):
     def __init__(self):
         super().__init__()
@@ -91,6 +101,15 @@ class FeedForward(nn.Module):
     def forward(self, x):
         return self.layers(x)
 
+class FeedForward_v2(nn.Module):
+    def __init__(self, cfg):
+        super().__init__()
+        self.w1 = nn.Linear(cfg.emb_dim, 4 * cfg.emb_dim, bias=False)
+        self.w2 = nn.Linear(4 * cfg.emb_dim, cfg.emb_dim, bias=False)
+        self.w3 = nn.Linear(cfg.emb_dim, 4 * cfg.emb_dim, bias=False)
+
+    def forward(self, x):
+        return self.w2(torch.nn.functional.silu(self.w1(x)) * self.w3(x))
 
 class TransformerBlock(nn.Module):
     def __init__(self, cfg):
@@ -103,8 +122,8 @@ class TransformerBlock(nn.Module):
             use_flash=cfg.use_flash
         )
         self.ff = FeedForward(cfg)
-        self.norm1 = LayerNorm(cfg.emb_dim)
-        self.norm2 = LayerNorm(cfg.emb_dim)
+        self.norm1 = RMSNorm(cfg.emb_dim)
+        self.norm2 = RMSNorm(cfg.emb_dim)
 
     def forward(self, x):
         shortcut = x
@@ -128,10 +147,11 @@ class GPTModel(nn.Module):
             *[TransformerBlock(cfg) for _ in range(cfg.n_layers)]
         )
 
-        self.final_norm = LayerNorm(cfg.emb_dim)
+        self.final_norm = RMSNorm(cfg.emb_dim)
         self.out_head = nn.Linear(
-            cfg.emb_dim, cfg.vocab_size
+            cfg.emb_dim, cfg.vocab_size, bias=False
         )
+        self.out_head.weight = self.tok_emb.weight
 
     def forward(self, in_idx):
         batch_size, seq_len = in_idx.shape
