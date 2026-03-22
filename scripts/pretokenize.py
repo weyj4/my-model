@@ -9,10 +9,11 @@ import tiktoken
 from datasets import load_dataset
 import os
 
-def pretokenize(num_tokens: int, output_path: str):
+def pretokenize(dataset_name: str, num_tokens: int, output_path: str):
     tokenizer = tiktoken.get_encoding("gpt2")
     dataset = load_dataset(
-        "HuggingFaceFW/fineweb",
+        # "HuggingFaceFW/fineweb",
+        dataset_name,
         name="sample-10BT",
         split="train",
         streaming=True

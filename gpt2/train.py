@@ -1,5 +1,6 @@
 import argparse
 import glob
+import math
 import os
 import time
 from dataclasses import asdict
@@ -20,6 +21,15 @@ SMOKE_CONFIG = GPTConfig(
     n_layers=2,
 )
 
+def get_lr(step, train_cfg):
+    if step < train_cfg.warmup_steps:
+        return train_cfg.lr * (step + 1) / train_cfg.warmup_steps
+    if step > train_cfg.lr_decay_steps:
+        return train_cfg.min_lr
+    ratio = (step - train_cfg.warmup_steps) / (train_cfg.lr_decay_steps - train_cfg.warmup_steps)
+    coeff = 0.5 * (1.0 * math.cos(math.pi * ratio))
+    return train_cfg.min_lr + coeff * (train_cfg.lr - train_cfg.min_lr)
+
 def train(model, train_loader, val_loader, optimizer, device, train_cfg, model_cfg, tokenizer):
     tokens_seen, global_step = 0, -1
     t0 = time.time()
@@ -27,6 +37,9 @@ def train(model, train_loader, val_loader, optimizer, device, train_cfg, model_c
     for epoch in range(train_cfg.num_epochs):
         model.train()
         for input_batch, target_batch in train_loader:
+            lr = get_lr(global_step, train_cfg)
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr
             optimizer.zero_grad()
             loss = calc_loss_batch(input_batch, target_batch, model, device)
             loss.backward()
@@ -140,6 +153,7 @@ def main():
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=train_cfg.lr,
+        betas=(0.9, 0.95),
         weight_decay=train_cfg.weight_decay
     )
 
